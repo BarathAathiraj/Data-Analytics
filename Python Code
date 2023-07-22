@@ -1,0 +1,213 @@
+import numpy as np
+import pandas as pd
+
+dataset= pd.read_csv("/content/Sample - Superstore.csv",encoding='windows-1254')
+
+dataset.head()
+
+dataset.shape
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+dataset.columns
+
+data=dataset.drop(columns=['Row ID','Order Date', 'Ship Date','Customer ID', 'Customer Name','Product ID'],axis=1)
+data.head()
+
+dataset.info()
+
+dataset.describe()
+
+data=dataset.drop(columns=['Row ID',"Order ID",'Order Date', 'Ship Date','Customer ID', 'Customer Name','Product ID'],axis=1)
+data.head()
+
+
+data.shape
+
+data.corr()
+
+import plotly.express as px
+fig = px.imshow(data.corr(),text_auto=True)
+fig.show()
+
+
+import seaborn as sns
+ax=sns.heatmap(data.corr(),annot=True,cbar=True,square=True,linecolor="red",linewidths=1,xticklabels="auto",yticklabels="auto",fmt=".2f")
+ax.set(xlabel="", ylabel="")
+ax.xaxis.tick_top()
+
+Top 10 Most Profit Cities
+
+data["City"].unique()
+
+cities_profit=pd.DataFrame(data.groupby("City")["Profit"].sum())
+cities_profit.reset_index(inplace=True)
+
+cities_profit=cities_profit.sort_values(by="Profit",ascending=False)
+cities_profit.head(10)
+
+fig = px.treemap(cities_profit,
+                 path=['City' ,'Profit'],
+                 color_continuous_scale='deep',
+                 values='Profit',color='Profit')
+
+fig.update_layout(width=1000, height=1000)
+fig.show()
+
+data["State"].unique()
+
+state_profit=pd.DataFrame(data.groupby("State")["Profit"].sum())
+state_profit.reset_index(inplace=True)
+
+state_profit=state_profit.sort_values(by="Profit",ascending=False)
+state_profit.head(10)
+
+fig=px.treemap(state_profit,path=["State","Profit"],color_continuous_scale="deep",
+               values="Profit",color="Profit")
+fig.update_layout(width=1000,height=1000)
+fig.show()
+
+Which is the Most Profitable Sub_category
+
+data["Sub-Category"].unique()
+
+sub_categories_info=pd.DataFrame(data.groupby("Sub-Category")["Profit"].sum())
+sub_categories_info.reset_index(inplace=True)
+sub_categories_profit=sub_categories_info.sort_values(by="Profit",ascending=False)
+sub_categories_profit.head(10)
+
+import matplotlib.pyplot as plt
+plt.bar(sub_categories_profit["Sub-Category"],sub_categories_profit["Profit"])
+plt.xticks(sub_categories_profit['Sub-Category'] , rotation = "vertical")
+plt.xlabel("Sub-Categories")
+plt.ylabel("Profit")
+plt.show()
+
+#Category with most sales
+
+data["Category"].value_counts()
+
+categories_sales=data.groupby("Category").sum()
+categories_sales.reset_index(inplace=True)
+categories_sales.head(10)
+
+#category with highest sales
+
+plt.bar(categories_sales["Category"], categories_sales['Sales'])
+plt.xticks(categories_sales.index)
+plt.xlabel("Category")
+plt.ylabel("Sales")
+plt.show()
+
+popular_sub_category=pd.DataFrame(data.groupby("Sub-Category")["Quantity"].sum())
+popular_sub_category.reset_index(inplace=True)
+popular_sub_category=popular_sub_category.sort_values(by="Quantity",ascending=False)
+
+plt.bar(popular_sub_category["Sub-Category"],popular_sub_category["Quantity"],color="blue")
+plt.xticks(popular_sub_category["Sub-Category"],rotation="vertical")
+plt.title("Sub-Category Vs Quantity")
+plt.xlabel("Sub Category")
+plt.ylabel("Quantity")
+plt.show()
+
+#most profitable cutomer segment
+
+customer_segment=data.groupby("Segment").sum()
+customer_segment.reset_index(inplace=True)
+customer_segment
+
+plt.bar(customer_segment["Segment"],customer_segment["Profit"],color="red")
+plt.xticks(customer_segment["Segment"],rotation="vertical")
+plt.title("Segment Vs Profit")
+plt.xlabel("Segment")
+plt.ylabel("Profit")
+plt.show()
+
+#most profitable Region
+
+data["Region"].value_counts()
+
+profitable_region=pd.DataFrame(data.groupby("Region")["Profit"].sum())
+profitable_region.reset_index(inplace=True)
+profitable_region
+
+#city has the highest Sales Volume
+
+city_volume = pd.DataFrame(data.groupby('City')['Sales'].sum())
+city_volume =city_volume.sort_values(by="Sales",ascending=False)
+city_volume.head()
+
+plt.bar(city_volume.index[0:30], city_volume['Sales'][0:30],color="red")
+plt.xticks(city_volume.index[0:30],rotation = 'vertical')
+plt.xlabel("City" )
+plt.ylabel("Sales")
+plt.show()
+
+#Predict the profit
+
+data.head()
+
+
+dataset1=data.drop(columns=["Country","City","State","Product Name","Sub-Category","Postal Code"])
+dataset1.head()
+
+dataset1["Ship Mode"].value_counts()
+
+dataset1["Segment"].value_counts()
+
+dataset1["Category"].value_counts()
+
+dataset1["Region"].value_counts()
+
+#categorical variable into numerical value
+
+dataset1.replace({"Ship Mode":{"Standard Class":0,"Second Class":1,"First Class":2,"Same Day":3},"Segment":{"Consumer":0,"Corporate":1,"Home Office":2},
+                 "Category":{"Office Supplies":0,"Furniture":1,"Technology":2},"Region":{"West":0,"East":1,"Central":2,"South":3}},inplace=True)
+
+dataset1.head()
+
+#seprating the dataset into x and y
+
+x=dataset1.iloc[:,:-1]
+print(x)
+
+y=dataset1.iloc[:,-1]
+print(y)
+
+#Rescaling the Features
+
+from sklearn.preprocessing import MinMaxScaler
+scaler=MinMaxScaler()
+
+
+num_vars=["Sales","Quantity"]
+x[num_vars]=scaler.fit_transform(x[num_vars])
+print(x)
+
+#Spliting the dataset into training and testing data
+
+from sklearn.model_selection import train_test_split
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.25,random_state=100)
+
+
+print(x_train.shape,x_test.shape,y_train.shape,y_test.shape)
+
+#Creating Machine Learning Model
+
+from sklearn.ensemble import RandomForestRegressor
+model=RandomForestRegressor(random_state=0,n_estimators=117)
+model.fit(x_train,y_train)
+
+#Predicting the test data
+
+y_pred=model.predict(x_test)
+
+from sklearn.metrics import r2_score
+print("R2 Score=",r2_score(y_pred,y_test)*100)
+
+fig = plt.figure()
+plt.scatter(y_test,y_pred)
+fig.suptitle('y_test vs y_pred', fontsize=20)              # Plot heading
+plt.xlabel('y_test', fontsize=18)                          # X-label
+plt.ylabel('Y_pred', fontsize=16)
